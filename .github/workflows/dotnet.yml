@@ -1,0 +1,70 @@
+name: .NET CI/CD to Azure
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  AZURE_WEBAPP_NAME: 'dontenDummyone'
+  AZURE_WEBAPP_PACKAGE_PATH: './publish_output'
+  DOTNET_PUBLISH: 'dotnet publish -c Release -o ${{ github.workspace }}/publish_output'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+
+    - name: Publish
+      run: ${{ env.DOTNET_PUBLISH }}
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: dotnet-publish
+        path: ${{ github.workspace }}/publish_output
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: dotnet-publish
+        path: ${{ github.workspace }}/publish_output
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        
+    - name: Verify deployment
+      run: |
+        echo "Deployment completed successfully!"
+        echo "Web App URL: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
