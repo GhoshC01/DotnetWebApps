@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  DOTNET_VERSION: '8.0.x'
+  DOTNET_VERSION: '9.0.x'
   AZURE_WEBAPP_NAME: 'dontenDummyone'
   AZURE_WEBAPP_PACKAGE_PATH: './publish_output'
   DOTNET_PUBLISH: 'dotnet publish -c Release -o ${{ github.workspace }}/publish_output'
